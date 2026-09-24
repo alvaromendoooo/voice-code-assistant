@@ -8,6 +8,7 @@ the file. See the Code Modification Protocol in AGENTS.md.
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 
 
@@ -26,4 +27,10 @@ def propose_edit(
     proposed_text: str,
     rationale: str,
 ) -> EditProposal:
-    raise NotImplementedError
+    return EditProposal(
+        proposal_id=f"p-{uuid.uuid4().hex[:8]}",
+        file_path=file_path,
+        original_text=original_text,
+        proposed_text=proposed_text,
+        rationale=rationale,
+    )

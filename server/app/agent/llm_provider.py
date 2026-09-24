@@ -24,3 +24,21 @@ class LLMProvider(Protocol):
     async def stream_reply(self, messages: list[LLMMessage]) -> AsyncIterator[str]:
         """Yield response text incrementally (e.g. sentence or token chunks)."""
         ...
+
+
+class StubLLMProvider:
+    """Deterministic canned-response provider.
+
+    Used to validate the WebSocket wire format end-to-end without depending on a real
+    LLM backend. Replace with a real provider adapter once the round-trip is confirmed.
+    """
+
+    _CANNED_SENTENCES = (
+        "I looked at the current file.",
+        "This is a stub response used to validate the WebSocket wire format end-to-end.",
+        "Swap in a real LLMProvider once the round-trip is confirmed working.",
+    )
+
+    async def stream_reply(self, messages: list[LLMMessage]) -> AsyncIterator[str]:
+        for sentence in self._CANNED_SENTENCES:
+            yield sentence

@@ -28,17 +28,39 @@ class ChangelogStore:
         unified_diff: str,
         rationale: str,
     ) -> None:
-        raise NotImplementedError
+        self._append(
+            {
+                "kind": "proposal",
+                "proposal_id": proposal_id,
+                "timestamp": self._now(),
+                "file_path": file_path,
+                "original_snippet": original_snippet,
+                "unified_diff": unified_diff,
+                "rationale": rationale,
+                "decision": "pending",
+            }
+        )
 
     def record_decision(
         self,
         proposal_id: str,
         decision: Literal["accepted", "rejected"],
     ) -> None:
-        raise NotImplementedError
+        # The store is append-only, so a decision is a new entry correlated by
+        # proposal_id rather than a mutation of the original "proposal" entry.
+        self._append(
+            {
+                "kind": "decision",
+                "proposal_id": proposal_id,
+                "timestamp": self._now(),
+                "decision": decision,
+            }
+        )
 
     def _append(self, entry: dict) -> None:
-        raise NotImplementedError
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        with self._path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
 
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat()

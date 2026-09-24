@@ -20,4 +20,13 @@ class EditorContextSnapshot:
 
 def build_prompt_context(snapshot: EditorContextSnapshot) -> str:
     """Render an EditorContextSnapshot into prompt text for the LLM."""
-    raise NotImplementedError
+    lines = [f"File: {snapshot.file_path} ({snapshot.language})"]
+    if snapshot.selection is not None:
+        start, end = snapshot.selection
+        lines.append(f"Selected lines: {start}-{end}")
+    if snapshot.cursor is not None:
+        line, col = snapshot.cursor
+        lines.append(f"Cursor: line {line}, col {col}")
+    lines.append("---")
+    lines.append(snapshot.file_text)
+    return "\n".join(lines)
