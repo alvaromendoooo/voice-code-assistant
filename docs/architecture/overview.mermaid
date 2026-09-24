@@ -1,0 +1,10 @@
+flowchart TD
+    A(Developer) -->|Voice| B(Voice Layer)
+    B --> C{Agent Runtime}
+    C --> |First| D(Context Engine)
+    D --> E(Codebase)
+    C --> |Second| F(Tool Interface)
+    F --> G(Diff Engine)
+    G --> |Voice decision changes| A
+    G --> H(IDE)
+    H -->|Accept / Reject| I(Apply Patch)
