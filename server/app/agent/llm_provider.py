@@ -70,8 +70,11 @@ class StubLLMProvider:
     async def decide_edit(
         self, messages: list[LLMMessage], file_text: str
     ) -> EditDecision | None:
-        combined_text = " ".join(m.content for m in messages).lower()
-        if not any(keyword in combined_text for keyword in self._EDIT_TRIGGER_KEYWORDS):
+        # Only scan user-authored content -- scanning system prompts too is fragile:
+        # a fixed instruction can accidentally contain a trigger keyword as a
+        # substring (e.g. "improvement" contains "improve") and fire unconditionally.
+        user_text = " ".join(m.content for m in messages if m.role == "user").lower()
+        if not any(keyword in user_text for keyword in self._EDIT_TRIGGER_KEYWORDS):
             return None
 
         proposed_text = file_text.rstrip("\n") + "\n# TODO: reviewed by Voice Code Assistant (stub)\n"
@@ -202,12 +205,13 @@ class OllamaProvider:
             try:
                 response = await client.post(f"{self._base_url}/api/chat", json=payload)
                 response.raise_for_status()
-            except httpx.HTTPError:
+                content = response.json().get("message", {}).get("content", "")
+            except (httpx.HTTPError, json.JSONDecodeError):
                 # Best-effort enhancement -- degrade to "no edit proposed" rather than
-                # failing the whole utterance if Ollama is unreachable or errors.
+                # failing the whole utterance if Ollama is unreachable, errors, or
+                # returns a malformed body.
                 return None
 
-        content = response.json().get("message", {}).get("content", "")
         try:
             decision = _EditDecisionSchema.model_validate_json(content)
         except ValidationError:

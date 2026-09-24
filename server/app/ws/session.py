@@ -91,6 +91,15 @@ class Session:
             message.payload.text, context
         )
 
+        if not chunks:
+            # An empty response is still a response -- always send a done delta so
+            # the client's TTS/explanation UI doesn't wait forever for one.
+            await self._send(
+                AgentExplanationDelta(
+                    id=message.id,
+                    payload=AgentExplanationDeltaPayload(text="", done=True),
+                )
+            )
         for index, chunk in enumerate(chunks):
             await self._send(
                 AgentExplanationDelta(
