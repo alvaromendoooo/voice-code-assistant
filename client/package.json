@@ -1,0 +1,21 @@
+{
+  "name": "voice-code-assistant-client",
+  "displayName": "Voice Code Assistant",
+  "description": "Voice-first coding assistant IDE extension (Phase 1 scaffold)",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.0"
+  }
+}
