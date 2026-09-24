@@ -7,9 +7,13 @@ one per provider, and are selected via configuration -- not by branching in the 
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Protocol
+
+from google import genai
+from google.genai import types
 
 
 @dataclass
@@ -42,3 +46,51 @@ class StubLLMProvider:
     async def stream_reply(self, messages: list[LLMMessage]) -> AsyncIterator[str]:
         for sentence in self._CANNED_SENTENCES:
             yield sentence
+
+
+class GeminiProvider:
+    """Google Gemini-backed LLM provider.
+
+    Reads GOOGLE_API_KEY from the environment (populated from the repo-root .env by
+    app.config.load_environment). Selected automatically in main.py when that key is
+    present; falls back to StubLLMProvider otherwise.
+    """
+
+    def __init__(self, model: str = "gemini-3.6-flash", api_key: str | None = None) -> None:
+        resolved_key = api_key or os.environ.get("GOOGLE_API_KEY")
+        if not resolved_key:
+            raise RuntimeError("GOOGLE_API_KEY is not set")
+        self._client = genai.Client(api_key=resolved_key)
+        self._model = model
+
+    async def stream_reply(self, messages: list[LLMMessage]) -> AsyncIterator[str]:
+        system_instruction, contents = _split_system_prompt(messages)
+        config = (
+            types.GenerateContentConfig(system_instruction=system_instruction)
+            if system_instruction
+            else None
+        )
+        stream = await self._client.aio.models.generate_content_stream(
+            model=self._model,
+            contents=contents,
+            config=config,
+        )
+        async for chunk in stream:
+            if chunk.text:
+                yield chunk.text
+
+
+def _split_system_prompt(
+    messages: list[LLMMessage],
+) -> tuple[str | None, list[types.Content]]:
+    system_parts = [m.content for m in messages if m.role == "system"]
+    contents = [
+        types.Content(role=_to_gemini_role(m.role), parts=[types.Part(text=m.content)])
+        for m in messages
+        if m.role != "system"
+    ]
+    return ("\n".join(system_parts) or None, contents)
+
+
+def _to_gemini_role(role: str) -> str:
+    return "model" if role == "assistant" else "user"
