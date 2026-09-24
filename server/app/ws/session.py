@@ -66,6 +66,8 @@ class Session:
                 )
         except ValidationError as exc:
             await self._send_error(message_id, "invalid_message", str(exc))
+        except Exception as exc:  # noqa: BLE001 - keep the session alive on provider/network errors
+            await self._send_error(message_id, "internal_error", str(exc))
 
     async def _handle_voice_utterance(self, message: VoiceUtterance) -> None:
         raw_context = message.payload.context

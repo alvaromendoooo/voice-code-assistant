@@ -36,7 +36,10 @@ def main() -> None:
         )
 
         proposal_id = None
-        for _ in range(10):
+        # Explanation streaming can arrive in many small chunks depending on the
+        # provider (e.g. Ollama streams near-token-level), so cap on message count
+        # generously rather than assuming a fixed number of chunks.
+        for _ in range(500):
             message = ws.receive_json()
             print(message)
             if message["type"] == "diff.proposed":
